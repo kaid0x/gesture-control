@@ -1,0 +1,7 @@
+opencv-python
+mediapipe
+numpy
+
+# Optional: enables universal Play/Pause (YouTube, Apple Music, etc.)
+# Install separately if you want it:
+#   pip install pyobjc-framework-Quartz pyobjc-framework-Cocoa
