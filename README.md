@@ -35,7 +35,16 @@ While **disarmed**, no gesture does anything — handy when you're just gesturin
 
 ---
 
-## Setup
+## Install
+
+There are two ways to get this, depending on who you are:
+
+- **Just want to use it?** A prebuilt, double-click Mac app is **planned** (see [Roadmap](#roadmap)). When it lands, you'll download it straight from the [Releases](../../releases) page and run it — no Python, no terminal. *(Not available yet.)*
+- **Want to run or change the code?** Follow the developer setup below — it runs locally on your Mac from source.
+
+---
+
+## Setup (run from source)
 
 Requires **Python 3.9–3.12** (MediaPipe doesn't yet ship wheels for the newest releases).
 
@@ -76,6 +85,7 @@ Planned for upcoming releases:
 - 🪄 **One-euro filter** — adaptive smoothing for steadier-when-still, snappier-when-moving tracking
 - 📍 **Menu-bar / background mode** — run quietly from the menu bar instead of a window
 - 💤 **Idle sleep** — drop to a low-power heartbeat when no hand is around, so it can run all day
+- 📦 **Double-click Mac app** — package the whole thing into a `.app` bundle (via py2app / PyInstaller) that ships Python and every dependency inside it, so end users just download from [Releases](../../releases) and double-click — no Python, no `pip`, no terminal. Pairs with menu-bar mode as the "make it a real app" milestone. *(Note: an unsigned app triggers macOS Gatekeeper, so users right-click → Open the first time; code-signing needs a paid Apple Developer account.)*
 - 🪟 **Windows version** — the gesture engine is already cross-platform; only the volume/media layer is macOS-specific today. A Windows port (volume via `pycaw`, media-key playback) is planned for a future release — **on the roadmap, but not imminent.**
 
 ---
@@ -83,6 +93,8 @@ Planned for upcoming releases:
 ## How it works
 
 The webcam feed is mirrored and run through MediaPipe Hands to get 21 hand landmarks. Finger states (up/down) are read from the landmarks to classify the current pose; the thumb-to-index distance drives the volume. Volume is applied via `osascript` on a background thread (so it never stalls the video), playback uses Spotify AppleScript and macOS media keys, and a separate thread polls Spotify once a second for the now-playing info and album art.
+
+Everything runs **locally** on your own Mac — your webcam feed never leaves the machine, and there's no server involved. Once packaged (see Roadmap), the same code reaches two audiences from the **Releases** page: source code for developers who want to tinker, and a prebuilt double-click app for everyone else.
 
 ---
 
