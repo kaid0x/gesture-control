@@ -63,6 +63,24 @@ pip install pyobjc-framework-Quartz pyobjc-framework-Cocoa
 python gesture_volume_control.py
 ```
 
+#### Command-line options
+
+The defaults work out of the box; these are available if you want to tune things:
+
+```bash
+python gesture_volume_control.py --help
+
+  --camera N        camera index (default: 0)
+  --width W         capture width (default: 1280)
+  --height H        capture height (default: 720)
+  --fps N           capture fps (default: 30)
+  --min-ratio R     pinch/palm ratio mapped to 0%   (default: 0.20)
+  --max-ratio R     pinch/palm ratio mapped to 100% (default: 1.30)
+  --smoothing S     volume smoothing 0..1, higher = smoother (default: 0.4)
+  --no-spotify      disable the Spotify now-playing poller
+  --debug           verbose logging of backend errors
+```
+
 ### macOS permissions
 
 - **Camera** — macOS will prompt the first time. Allow it under *System Settings → Privacy & Security → Camera*.
@@ -70,8 +88,9 @@ python gesture_volume_control.py
 
 ### Notes
 
-- **Spotify** must be open for next/previous and the now-playing panel to work.
-- Hold your hand roughly **upright** (fingers pointing up) — the pose detection assumes this.
+- **Spotify** must be open for next/previous and the now-playing panel to work. Skip it with `--no-spotify` if you only want volume + play/pause.
+- Pose detection is **rotation-tolerant** — fingers are read by their distance from the wrist, so a tilted hand still registers correctly.
+- Volume is **distance-independent** — the pinch is measured relative to your palm size, so the same gesture means the same level whether your hand is near or far from the camera.
 - The first time a new song appears, the album art downloads over the network, so it may take a second to show.
 
 ---
@@ -81,7 +100,7 @@ python gesture_volume_control.py
 Planned for upcoming releases:
 
 - 👉 **Swipe left/right** for next/previous (replacing the peace/point poses — more distinct, feels like flicking through tracks)
-- 🎯 **Auto-calibration** — learns your pinch range automatically, so no more hand-tuning distances when you move closer or further
+- 🎯 **Auto-calibration** — the pinch is already normalized by palm size, so moving closer or further no longer breaks the range (`--min-ratio` / `--max-ratio` let you fine-tune it); next step is learning your personal range automatically with no flags at all
 - 🪄 **One-euro filter** — adaptive smoothing for steadier-when-still, snappier-when-moving tracking
 - 📍 **Menu-bar / background mode** — run quietly from the menu bar instead of a window
 - 💤 **Idle sleep** — drop to a low-power heartbeat when no hand is around, so it can run all day
@@ -92,7 +111,9 @@ Planned for upcoming releases:
 
 ## How it works
 
-The webcam feed is mirrored and run through MediaPipe Hands to get 21 hand landmarks. Finger states (up/down) are read from the landmarks to classify the current pose; the thumb-to-index distance drives the volume. Volume is applied via `osascript` on a background thread (so it never stalls the video), playback uses Spotify AppleScript and macOS media keys, and a separate thread polls Spotify once a second for the now-playing info and album art.
+The webcam feed is mirrored and run through MediaPipe Hands to get 21 hand landmarks. Finger states (extended/curled) are read by comparing each fingertip's distance from the wrist against its knuckle — a rotation-tolerant test that holds up when the hand is tilted — and used to classify the current pose. The thumb-to-index distance, normalized by palm size so it's independent of camera distance, drives the volume.
+
+All OS-specific work sits behind a small `MacOSBackend` (volume, transport, now-playing), which keeps the core loop portable. Volume is applied via `osascript` on a debounced background thread (so it never stalls the video), playback uses macOS media keys with a Spotify AppleScript fallback, and a separate thread polls Spotify once a second for the now-playing info and album art. The capture loop is wrapped in `try/finally` so the camera and worker threads are always released cleanly on exit.
 
 Everything runs **locally** on your own Mac — your webcam feed never leaves the machine, and there's no server involved. Once packaged (see Roadmap), the same code reaches two audiences from the **Releases** page: source code for developers who want to tinker, and a prebuilt double-click app for everyone else.
 
